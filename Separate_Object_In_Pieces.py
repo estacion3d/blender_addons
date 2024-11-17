@@ -43,7 +43,7 @@
 # The addon have an option to remove the unused materials in the separated objects
 
 # Español:
-# Este addon para Blender te permite separar un objecto en sus diferentes piezas en modo objeto
+# Este addon para Blender te permite separar un objeto en sus diferentes piezas directamente en modo objeto
 # El addon podria tardar un poco en separar el objecto si este tiene muchos polygonos
 # El addon funciona con multiples objectos seleccionados y solo funciona en objetos tipo mesh
 # El addon tiene una opcion para asignar el centro de pivote / origen en el centro despues de separar los objectos
