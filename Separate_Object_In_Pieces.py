@@ -13,9 +13,9 @@ import bpy
 # Define a custom property group
 class ObjectSeparationProperties(bpy.types.PropertyGroup):
     apply_origin_to_center: bpy.props.BoolProperty(
-        name="Apply Origin to Center",
-        description="Set the origin of separated objects to their center",
-        default=True
+        name ="Apply Origin to Center",
+        description ="Set the origin of separated objects to their center",
+        default = False
     )
 
 # Define the operator
