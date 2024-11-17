@@ -1,5 +1,5 @@
 bl_info = {
-    "name": "Separate Geometry Clusters",
+    "name": "Separate Object in Pieces",
     "author": "Harold Tovar, Estación3D",
     "version": (1, 0, 0),
     "blender": (3, 2, 0),
