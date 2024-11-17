@@ -49,7 +49,7 @@
 # El addon tiene una opcion para asignar el centro de pivote / origen en el centro, despues de separar los objetos
 # El addon tiene una opcion que permite borrar los materiales que no estan en uso despues de separar los objetos
 
-# Happy Blendig!!!
+# Happy Blending!!!
 
 bl_info = {
     "name": "Separate Objects in Pieces",
