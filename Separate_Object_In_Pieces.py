@@ -28,57 +28,30 @@ class OBJECT_OT_separate_geometry_clusters(bpy.types.Operator):
     bl_description = "Separate into individual objects"
     bl_options = {'REGISTER', 'UNDO'}
 
-    @classmethod
-    def poll(cls, context):
-        # Ensure there are selected objects and they are mesh objects
-        return any(obj.type == 'MESH' for obj in context.selected_objects)
+      def execute(self, context):
+        obj = context.active_object
 
-    def execute(self, context):
-        # Access the scene's property group
-        separation_settings = context.scene.separation_settings
-        apply_origin_to_center = separation_settings.apply_origin_to_center
-        apply_transformations = separation_settings.apply_transformations
-
-        selected_objects = [obj for obj in context.selected_objects if obj.type == 'MESH']
-
-        if not selected_objects:
-            self.report({'ERROR'}, "No mesh objects selected")
+        # Ensure it's a mesh object
+        if obj.type != 'MESH':
+            self.report({'ERROR'}, "Active object is not a mesh")
             return {'CANCELLED'}
+        
+        # Get the property group
+        props = obj.separation_properties
+        
+        # Enter Edit Mode to separate
+        bpy.ops.object.mode_set(mode='EDIT')
+        bpy.ops.mesh.separate(type='LOOSE')
+        bpy.ops.object.mode_set(mode='OBJECT')
 
-        for obj in selected_objects:
-            # Ensure in Object Mode
-            if obj.mode != 'OBJECT':
-                bpy.ops.object.mode_set(mode='OBJECT')
+        # Apply origin to center if the property is True
+        if props.apply_origin_to_center:
+            for obj in context.selected_objects:
+                if obj.type == 'MESH':  # Ensure we only modify mesh objects
+                    bpy.context.view_layer.objects.active = obj
+                    bpy.ops.object.origin_set(type='ORIGIN_CENTER_OF_MASS', center='MEDIAN')
 
-            # Optionally, apply transformations if needed (scale, rotation, location)
-            if apply_transformations:
-                bpy.ops.object.transform_apply(location=True, rotation=True, scale=True)
-
-            # Switch to Edit mode and separate geometry by loose parts
-            bpy.context.view_layer.objects.active = obj
-            bpy.ops.object.mode_set(mode='EDIT')
-            bpy.ops.mesh.select_all(action='SELECT')
-            bpy.ops.mesh.separate(type='LOOSE')
-            bpy.ops.object.mode_set(mode='OBJECT')
-
-            # Now, new objects are created for each loose geometry island
-            for new_obj in context.view_layer.objects:
-                if new_obj.select_get() and new_obj.type == 'MESH' and new_obj != obj:
-                    # Preserve the original object's materials
-                    new_obj.data.materials.clear()  # Clear default materials
-                    for mat in obj.data.materials:
-                        new_obj.data.materials.append(mat)
-
-                    # Optionally set the origin to the center
-                    if apply_origin_to_center:
-                        new_obj.select_set(True)
-                        context.view_layer.objects.active = new_obj
-                        bpy.ops.object.origin_set(type='ORIGIN_CENTER_OF_MASS', center='MEDIAN')
-
-            # Remove the original object after separation
-            bpy.data.objects.remove(obj, do_unlink=True)
-
-        self.report({'INFO'}, "Geometry clusters separated and original objects deleted")
+        self.report({'INFO'}, "Objects separated and origins updated")
         return {'FINISHED'}
 
 class OBJECT_PT_separate_panel(bpy.types.Panel):
