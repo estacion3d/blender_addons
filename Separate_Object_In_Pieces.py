@@ -36,16 +36,16 @@
 # ##### FIN LICENCIA GPL ESPAÑOL #####
 
 # English:
-# This Blender addon allow separate an object in different pieces inside Object Mode
+# This Blender addon allows you to separate an object in different pieces inside Object Mode
 # The addon could take a bit to separated the object if the object have a lot of polygons
 # The addon works on multiple selected objects and only works in Mesh Objects
 # The addon have an option to set the origin to the center of the objects after separated them
 # The addon have an option to remove the unused materials in the separated objects
 
 # Español:
-# Este addon para Blender permite separar un objecto en sus diferentes piezas en modo objeto
+# Este addon para Blender te permite separar un objecto en sus diferentes piezas en modo objeto
 # El addon podria tardar un poco en separar el objecto si este tiene muchos polygonos
-# El addon funciona con multiples objectos seleccionados
+# El addon funciona con multiples objectos seleccionados y solo funciona en objetos tipo mesh
 # El addon tiene una opcion para asignar el centro de pivote / origen en el centro despues de separar los objectos
 # El addon tiene una opcion que permite borrar los materiales que no estan en uso despues de separar los objetos
 
