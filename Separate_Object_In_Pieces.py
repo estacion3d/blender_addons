@@ -20,7 +20,7 @@ class SeparationSettings(bpy.types.PropertyGroup):
 
 class OBJECT_OT_separate_geometry_clusters(bpy.types.Operator):
     bl_idname = "object.separate_geometry_clusters"
-    bl_label = "Separate Geometry Clusters"
+    bl_label = "Separate Object in Pieces"
     bl_description = "Separate object into individual pieces in object mode"
     bl_options = {'REGISTER', 'UNDO'}
 
