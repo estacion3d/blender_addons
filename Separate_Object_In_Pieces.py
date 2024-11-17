@@ -1,27 +1,31 @@
 bl_info = {
-    "name": "Separate Object in Pieces",
+    "name": "Separate Geometry Clusters",
     "author": "Harold Tovar, Estación3D",
     "version": (1, 0, 0),
     "blender": (3, 2, 0),
-    "location": "View3D > Tool > Split Tool > Separate Object",
-    "description": "Separate object into individual pieces",
+    "location": "View3D > Tool > Split Tool > Separate Object in Pieces",
+    "description": "Separate object in different pieces",
     "category": "Object",
 }
 
 import bpy
-import bmesh
 
 class SeparationSettings(bpy.types.PropertyGroup):
     apply_origin_to_center: bpy.props.BoolProperty(
-        name = "Apply Origin to Center",
-        description = "Set the origin to the center",
+        name ="Set Origin to Center",
+        description ="Set the origin of separated objects to their center",
+        default = False
+    )
+    apply_transformations: bpy.props.BoolProperty(
+        name = "Apply Transformations",
+        description = "Apply location, rotation, and scale to the new objects",
         default = False
     )
 
 class OBJECT_OT_separate_geometry_clusters(bpy.types.Operator):
     bl_idname = "object.separate_geometry_clusters"
     bl_label = "Separate Object in Pieces"
-    bl_description = "Separate object into individual pieces in object mode"
+    bl_description = "Separate into individual objects"
     bl_options = {'REGISTER', 'UNDO'}
 
     @classmethod
@@ -33,6 +37,7 @@ class OBJECT_OT_separate_geometry_clusters(bpy.types.Operator):
         # Access the scene's property group
         separation_settings = context.scene.separation_settings
         apply_origin_to_center = separation_settings.apply_origin_to_center
+        apply_transformations = separation_settings.apply_transformations
 
         selected_objects = [obj for obj in context.selected_objects if obj.type == 'MESH']
 
@@ -45,82 +50,36 @@ class OBJECT_OT_separate_geometry_clusters(bpy.types.Operator):
             if obj.mode != 'OBJECT':
                 bpy.ops.object.mode_set(mode='OBJECT')
 
-            # Apply object transformations to prevent offsets
-            bpy.ops.object.transform_apply(location=True, rotation=True, scale=True)
+            # Optionally, apply transformations if needed (scale, rotation, location)
+            if apply_transformations:
+                bpy.ops.object.transform_apply(location=True, rotation=True, scale=True)
 
-            # Store the object's world matrix
-            world_matrix = obj.matrix_world.copy()
+            # Switch to Edit mode and separate geometry by loose parts
+            bpy.context.view_layer.objects.active = obj
+            bpy.ops.object.mode_set(mode='EDIT')
+            bpy.ops.mesh.select_all(action='SELECT')
+            bpy.ops.mesh.separate(type='LOOSE')
+            bpy.ops.object.mode_set(mode='OBJECT')
 
-            # Create a BMesh from the object
-            bm = bmesh.new()
-            bm.from_mesh(obj.data)
+            # Now, new objects are created for each loose geometry island
+            for new_obj in context.view_layer.objects:
+                if new_obj.select_get() and new_obj.type == 'MESH' and new_obj != obj:
+                    # Preserve the original object's materials
+                    new_obj.data.materials.clear()  # Clear default materials
+                    for mat in obj.data.materials:
+                        new_obj.data.materials.append(mat)
 
-            # Find disconnected geometry islands
-            islands = self.get_geometry_islands(bm)
+                    # Optionally set the origin to the center
+                    if apply_origin_to_center:
+                        new_obj.select_set(True)
+                        context.view_layer.objects.active = new_obj
+                        bpy.ops.object.origin_set(type='ORIGIN_CENTER_OF_MASS', center='MEDIAN')
 
-            # Separate each island into a new object
-            for island_verts in islands:
-                # Create a new mesh and object for this island
-                new_mesh = bpy.data.meshes.new(f"{obj.name}_Part")
-                new_obj = bpy.data.objects.new(new_mesh.name, new_mesh)
-                context.collection.objects.link(new_obj)
-
-                # Preserve the original position by applying the world matrix
-                new_obj.matrix_world = world_matrix
-
-                # Create a new BMesh for the island
-                island_bm = bmesh.new()
-                vert_map = {}
-
-                # Copy vertices and faces to the new BMesh
-                for vert in island_verts:
-                    new_vert = island_bm.verts.new(world_matrix @ vert.co)  # Transform to world space
-                    vert_map[vert] = new_vert
-                island_bm.verts.ensure_lookup_table()
-
-                for face in bm.faces:
-                    if all(v in island_verts for v in face.verts):
-                        island_bm.faces.new([vert_map[v] for v in face.verts])
-
-                # Update the new object with the island BMesh
-                island_bm.to_mesh(new_mesh)
-                island_bm.free()
-
-                # Optionally set the origin to the center
-                if apply_origin_to_center:
-                    new_obj.select_set(True)
-                    context.view_layer.objects.active = new_obj
-                    bpy.ops.object.origin_set(type='ORIGIN_CENTER_OF_MASS', center='MEDIAN')
-
-            # Remove the original object
+            # Remove the original object after separation
             bpy.data.objects.remove(obj, do_unlink=True)
 
-        self.report({'INFO'}, "All selected objects were separated in pieces")
+        self.report({'INFO'}, "Geometry clusters separated and original objects deleted")
         return {'FINISHED'}
-
-    def get_geometry_islands(self, bm):
-        """Find disconnected geometry islands in a BMesh."""
-        visited = set()
-        islands = []
-
-        for vert in bm.verts:
-            if vert in visited:
-                continue
-
-            # Perform a flood fill to collect all connected vertices
-            island = set()
-            stack = [vert]
-            while stack:
-                current = stack.pop()
-                if current in visited:
-                    continue
-                visited.add(current)
-                island.add(current)
-                stack.extend([e.other_vert(current) for e in current.link_edges])
-
-            islands.append(island)
-
-        return islands
 
 class OBJECT_PT_separate_panel(bpy.types.Panel):
     bl_label = "Separate Object in Pieces"
@@ -135,6 +94,7 @@ class OBJECT_PT_separate_panel(bpy.types.Panel):
 
         # Property from Scene's property group
         layout.prop(scene.separation_settings, "apply_origin_to_center", text="Apply Origin to Center")
+        layout.prop(scene.separation_settings, "apply_transformations", text="Apply Transformations (Location/Rotation/Scale)")
         layout.operator("object.separate_geometry_clusters")
 
 classes = (
